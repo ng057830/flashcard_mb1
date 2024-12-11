@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Flashcards Matemáticas - Radicales, Logaritmos y Conjuntos</title>
+    <!-- MathJax -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async
+            src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --secondary-color: #F5A623;
+            --background-color: #F8F9FA;
+            --text-color: #333;
+            --card-background: #FFFFFF;
+            --timer-color: #E74C3C;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .welcome-screen {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+            background: var(--card-background);
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .flashcard-container {
+            display: none;
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        .timer {
+            font-size: 24px;
+            color: var(--timer-color);
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .flashcard {
+            perspective: 1000px;
+            width: 100%;
+            height: 400px;
+            position: relative;
+            cursor: not-allowed;
+            margin-bottom: 20px;
+        }
+
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: var(--card-background);
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .flashcard-back {
+            transform: rotateY(180deg);
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            opacity: 0.6;
+        }
+
+        button.active {
+            opacity: 1;
+            cursor: pointer;
+        }
+
+        button:hover.active {
+            background-color: #357ABD;
+        }
+
+        .progress {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #ddd;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .motivation {
+            margin-top: 20px;
+            color: var(--secondary-color);
+            font-style: italic;
+            text-align: center;
+        }
+
+        .latex-content {
+            margin: 15px 0;
+            font-size: 1.2em;
+            text-align: left;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .flashcard {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-screen" id="welcomeScreen">
+        <h1>¡Bienvenida a Matemáticas Divertidas! 🌟</h1>
+        <p>Hola. Vamos a repasar conceptos clave sobre radicales, logaritmos, exponentes y conjuntos.</p>
+        <p>Tienes 15 segundos para pensar en cada pregunta antes de ver la respuesta.</p>
+        <button onclick="startFlashcards()">¡Iniciar Flashcards!</button>
+    </div>
+
+    <div class="flashcard-container" id="flashcardContainer">
+        <div class="timer" id="timer">15</div>
+        <div class="flashcard" id="flashcard">
+            <div class="flashcard-inner">
+                <div class="flashcard-front">
+                    <!-- Contenido dinámico -->
+                </div>
+                <div class="flashcard-back">
+                    <!-- Contenido dinámico -->
+                </div>
+            </div>
+        </div>
+        <div class="navigation">
+            <button onclick="previousCard()" id="prevButton" style="display: none;">Anterior</button>
+            <button onclick="nextCard()" id="nextButton" style="display: none;">Siguiente</button>
+        </div>
+        <div class="progress">
+            <span id="progressText">Tarjeta 1 de 20</span>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        <div class="motivation" id="motivation"></div>
+    </div>
+
+    <script>
+        const flashcards = [
+            {
+                front: {
+                    title: "Propiedades de los Exponentes",
+                    content: "¿Cuál es la propiedad de multiplicación de potencias con la misma base?"
+                },
+                back: {
+                    explanation: "Cuando multiplicamos potencias con la misma base, sumamos los exponentes.",
+                    math: [
+                        "Ejemplo: \\( a^m \\times a^n = a^{m+n} \\)",
+                        "Ejemplo numérico: \\( 2^3 \\times 2^4 = 2^{3+4} = 2^7 \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Propiedades de los Exponentes",
+                    content: "¿Cómo se divide potencias con la misma base?"
+                },
+                back: {
+                    explanation: "Al dividir potencias con la misma base, restamos los exponentes.",
+                    math: [
+                        "Ejemplo: \\( \\frac{a^m}{a^n} = a^{m-n} \\)",
+                        "Ejemplo numérico: \\( \\frac{5^6}{5^2} = 5^{6-2} = 5^4 \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Exponente Cero",
+                    content: "¿Qué valor tiene cualquier número elevado a la potencia cero?"
+                },
+                back: {
+                    explanation: "Cualquier número distinto de cero elevado a cero es uno.",
+                    math: [
+                        "Ejemplo: \\( a^0 = 1 \\), siempre que \\( a \\neq 0 \\)",
+                        "Entonces, \\( 7^0 = 1 \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Exponente Negativo",
+                    content: "¿Cómo se interpreta un exponente negativo?"
+                },
+                back: {
+                    explanation: "Un exponente negativo indica el inverso multiplicativo de la base elevada al exponente positivo.",
+                    math: [
+                        "Ejemplo: \\( a^{-n} = \\frac{1}{a^n} \\)",
+                        "Ejemplo numérico: \\( 3^{-2} = \\frac{1}{3^2} = \\frac{1}{9} \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Potencia de una Potencia",
+                    content: "¿Qué hacemos al elevar una potencia a otra potencia?"
+                },
+                back: {
+                    explanation: "Multiplicamos los exponentes.",
+                    math: [
+                        "Ejemplo: \\( (a^m)^n = a^{m \\times n} \\)",
+                        "Ejemplo numérico: \\( (2^3)^4 = 2^{3 \\times 4} = 2^{12} \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Propiedades de las Raíces",
+                    content: "¿Cómo se simplifica el producto de raíces con el mismo índice?"
+                },
+                back: {
+                    explanation: "Multiplicamos los radicandos y mantenemos el mismo índice.",
+                    math: [
+                        "Ejemplo: \\( \\sqrt[n]{a} \\times \\sqrt[n]{b} = \\sqrt[n]{a \\times b} \\)",
+                        "Ejemplo numérico: \\( \\sqrt{2} \\times \\sqrt{8} = \\sqrt{2 \\times 8} = \\sqrt{16} = 4 \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Conversión de Radicales a Exponentes",
+                    content: "¿Cómo se expresa una raíz como una potencia con exponente fraccionario?"
+                },
+                back: {
+                    explanation: "La raíz n-ésima de un número es igual a elevarlo a la fracción \\( \\frac{1}{n} \\).",
+                    math: [
+                        "Ejemplo: \\( \\sqrt[n]{a} = a^{1/n} \\)",
+                        "Ejemplo numérico: \\( \\sqrt[3]{8} = 8^{1/3} = 2 \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Potencia con Exponente Fraccionario",
+                    content: "¿Cómo se calcula una potencia con exponente fraccionario?"
+                },
+                back: {
+                    explanation: "El numerador es la potencia y el denominador es la raíz.",
+                    math: [
+                        "Ejemplo: \\( a^{m/n} = \\sqrt[n]{a^m} = (\\sqrt[n]{a})^m \\)",
+                        "Ejemplo numérico: \\( 16^{3/2} = (\\sqrt{16})^3 = 4^3 = 64 \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Definición de Logaritmo",
+                    content: "¿Qué es un logaritmo?"
+                },
+                back: {
+                    explanation: "Es el exponente al que hay que elevar la base para obtener cierto número.",
+                    math: [
+                        "Definición: Si \\( a^x = b \\), entonces \\( \\log_a{b} = x \\)",
+                        "Ejemplo: \\( 2^3 = 8 \\), entonces \\( \\log_2{8} = 3 \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Propiedad de Logaritmos - Producto",
+                    content: "¿Cómo se expresa el logaritmo de un producto?"
+                },
+                back: {
+                    explanation: "El logaritmo de un producto es la suma de los logaritmos.",
+                    math: [
+                        "Ejemplo: \\( \\log_a{(b \\times c)} = \\log_a{b} + \\log_a{c} \\)",
+                        "Ejemplo numérico: \\( \\log_2{(8 \\times 4)} = \\log_2{8} + \\log_2{4} = 3 + 2 = 5 \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Propiedad de Logaritmos - Cociente",
+                    content: "¿Cómo se expresa el logaritmo de un cociente?"
+                },
+                back: {
+                    explanation: "El logaritmo de un cociente es la resta de los logaritmos.",
+                    math: [
+                        "Ejemplo: \\( \\log_a{\\left( \\frac{b}{c} \\right)} = \\log_a{b} - \\log_a{c} \\)",
+                        "Ejemplo numérico: \\( \\log_3{\\left( \\frac{81}{9} \\right)} = \\log_3{81} - \\log_3{9} = 4 - 2 = 2 \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Propiedad de Logaritmos - Potencia",
+                    content: "¿Cómo se simplifica el logaritmo de una potencia?"
+                },
+                back: {
+                    explanation: "El exponente pasa a multiplicar al logaritmo.",
+                    math: [
+                        "Ejemplo: \\( \\log_a{(b^n)} = n \\times \\log_a{b} \\)",
+                        "Ejemplo numérico: \\( \\log_2{(8^2)} = 2 \\times \\log_2{8} = 2 \\times 3 = 6 \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Cambio de Base en Logaritmos",
+                    content: "¿Cómo cambiamos la base de un logaritmo?"
+                },
+                back: {
+                    explanation: "Dividimos el logaritmo en la nueva base entre el logaritmo de la vieja base en la nueva base.",
+                    math: [
+                        "Ejemplo: \\( \\log_b{a} = \\frac{\\log_c{a}}{\\log_c{b}} \\)",
+                        "Ejemplo numérico: \\( \\log_2{8} = \\frac{\\ln{8}}{\\ln{2}} = \\frac{2.0794}{0.6931} \\approx 3 \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Funciones Exponenciales",
+                    content: "¿Qué caracteriza a una función exponencial?"
+                },
+                back: {
+                    explanation: "Una función donde la variable independiente está en el exponente.",
+                    math: [
+                        "Forma general: \\( f(x) = a^x \\)",
+                        "Ejemplo: \\( f(x) = 2^x \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Funciones Logarítmicas",
+                    content: "¿Qué caracteriza a una función logarítmica?"
+                },
+                back: {
+                    explanation: "Es la inversa de la función exponencial.",
+                    math: [
+                        "Forma general: \\( f(x) = \\log_a{x} \\)",
+                        "Ejemplo: \\( f(x) = \\log_2{x} \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Simplificación de Radicales",
+                    content: "¿Cómo se simplifica un radical que se puede extraer?"
+                },
+                back: {
+                    explanation: "Extraemos factores cuyo exponente es múltiplo del índice.",
+                    math: [
+                        "Ejemplo: \\( \\sqrt{72} = \\sqrt{36 \\times 2} = \\sqrt{36} \\times \\sqrt{2} = 6\\sqrt{2} \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Racionalización de Denominadores",
+                    content: "¿Cómo se racionaliza un denominador con una raíz cuadrada?"
+                },
+                back: {
+                    explanation: "Multiplicamos numerador y denominador por la raíz.",
+                    math: [
+                        "Ejemplo: \\( \\frac{1}{\\sqrt{3}} = \\frac{1}{\\sqrt{3}} \\times \\frac{\\sqrt{3}}{\\sqrt{3}} = \\frac{\\sqrt{3}}{3} \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Notación de Conjuntos",
+                    content: "¿Cómo se representa un conjunto por extensión y comprensión?"
+                },
+                back: {
+                    explanation: "Por extensión listamos los elementos; por comprensión describimos una propiedad común.",
+                    math: [
+                        "Extensión: \\( A = \\{1, 2, 3, 4, 5\\} \\)",
+                        "Comprensión: \\( A = \\{ x \\in \\mathbb{N} : 1 \\leq x \\leq 5 \\} \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Intersección y Unión de Conjuntos",
+                    content: "¿Qué es la intersección y la unión de conjuntos?"
+                },
+                back: {
+                    explanation: "La intersección son los elementos comunes; la unión son todos los elementos de ambos conjuntos.",
+                    math: [
+                        "Ejemplo: \\( A = \\{1,2,3\\}, B = \\{3,4,5\\} \\)",
+                        "Intersección: \\( A \\cap B = \\{3\\} \\)",
+                        "Unión: \\( A \\cup B = \\{1,2,3,4,5\\} \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Diferencia de Conjuntos",
+                    content: "¿Qué es la diferencia entre dos conjuntos?"
+                },
+                back: {
+                    explanation: "Elementos que están en el primer conjunto pero no en el segundo.",
+                    math: [
+                        "Ejemplo: \\( A - B = \\{ x : x \\in A \\text{ y } x \\notin B \\} \\)",
+                        "Si \\( A = \\{1,2,3\\} \\) y \\( B = \\{3,4,5\\} \\), entonces \\( A - B = \\{1,2\\} \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Subconjuntos y Pertenencia",
+                    content: "¿Cuál es la diferencia entre \\( \\in \\) y \\( \\subset \\)?"
+                },
+                back: {
+                    explanation: "\\( \\in \\) indica pertenencia de elemento a conjunto; \\( \\subset \\) indica que todos los elementos de un conjunto están en otro.",
+                    math: [
+                        "Ejemplo: \\( 3 \\in A \\) significa que 3 es elemento de A.",
+                        "Si \\( A = \\{1,2,3\\} \\) y \\( B = \\{1,2\\} \\), entonces \\( B \\subset A \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Conjuntos Numéricos",
+                    content: "¿Cuál es la jerarquía de los conjuntos numéricos principales?"
+                },
+                back: {
+                    explanation: "Cada conjunto está contenido en el siguiente más amplio.",
+                    math: [
+                        "\\( \\mathbb{N} \\subset \\mathbb{Z} \\subset \\mathbb{Q} \\subset \\mathbb{R} \\subset \\mathbb{C} \\)",
+                        "\\( \\mathbb{N} \\): Naturales, \\( \\mathbb{Z} \\): Enteros",
+                        "\\( \\mathbb{Q} \\): Racionales, \\( \\mathbb{R} \\): Reales",
+                        "\\( \\mathbb{C} \\): Complejos"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Números Complejos",
+                    content: "¿Qué es un número complejo y cómo se representa?"
+                },
+                back: {
+                    explanation: "Un número compuesto por una parte real y una imaginaria.",
+                    math: [
+                        "Forma general: \\( z = a + bi \\)",
+                        "Donde \\( a, b \\in \\mathbb{R} \\) y \\( i = \\sqrt{-1} \\)",
+                        "Ejemplo: \\( z = 3 + 4i \\)"
+                    ]
+                }
+            },
+            {
+                front: {
+                    title: "Operaciones con Números Complejos",
+                    content: "¿Cómo se suman dos números complejos?"
+                },
+                back: {
+                    explanation: "Sumamos las partes reales y las partes imaginarias por separado.",
+                    math: [
+                        "Si \\( z_1 = a + bi \\) y \\( z_2 = c + di \\)",
+                        "Entonces: \\( z_1 + z_2 = (a + c) + (b + d)i \\)",
+                        "Ejemplo: \\( (2 + 3i) + (1 + 4i) = (2+1) + (3+4)i = 3 + 7i \\)"
+                    ]
+                }
+            }
+        ];
+
+        let currentCard = 0;
+        let isFlipped = false;
+        let timer;
+        let timeLeft = 15;
+        let canFlip = false;
+
+        function startFlashcards() {
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('flashcardContainer').style.display = 'block';
+            document.getElementById('progressText').textContent = `Tarjeta 1 de ${flashcards.length}`;
+            document.getElementById('progressFill').style.width = '0%';
+            displayCard(currentCard);
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = 15;
+            canFlip = false;
+            isFlipped = false; // Restablecer el estado de volteo
+            document.getElementById('timer').textContent = `Tiempo restante: ${timeLeft}s`;
+            document.getElementById('flashcard').style.cursor = 'not-allowed';
+            document.getElementById('prevButton').style.display = 'none'; // Ocultar botones
+            document.getElementById('nextButton').style.display = 'none';
+
+            if (timer) clearInterval(timer);
+
+            timer = setInterval(() => {
+                timeLeft--;
+                if (timeLeft > 0) {
+                    document.getElementById('timer').textContent = `Tiempo restante: ${timeLeft}s`;
+                } else {
+                    clearInterval(timer);
+                    canFlip = true;
+                    document.getElementById('flashcard').style.cursor = 'pointer';
+                    document.getElementById('timer').textContent = `¡Puedes girar la tarjeta!`;
+                }
+            }, 1000);
+        }
+
+        function displayCard(index) {
+            const card = flashcards[index];
+            const front = document.querySelector('.flashcard-front');
+            const back = document.querySelector('.flashcard-back');
+
+            front.innerHTML = `
+                <h2>${card.front.title}</h2>
+                <p>${card.front.content}</p>
+            `;
+            back.innerHTML = `
+                <h2>Explicación</h2>
+                <div class="latex-content">
+                    ${card.back.explanation}
+                </div>
+                ${card.back.math.map(item => `<div class="latex-content">${item}</div>`).join('')}
+            `;
+
+            // Restablecer el estado de la tarjeta
+            const flashcard = document.getElementById('flashcard');
+            flashcard.classList.remove('flipped');
+            isFlipped = false;
+
+            // Actualizar progreso
+            document.getElementById('progressText').textContent = `Tarjeta ${index + 1} de ${flashcards.length}`;
+            const progressPercentage = ((index) / (flashcards.length - 1)) * 100;
+            document.getElementById('progressFill').style.width = `${progressPercentage}%`;
+
+            // Actualizar mensaje de motivación
+            document.getElementById('motivation').textContent = "";
+
+            // Renderizar el contenido matemático con MathJax
+            MathJax.typesetPromise([front, back]).then(() => {
+                // Renderizado completo
+            });
+        }
+
+        function flipCard() {
+            if (canFlip) {
+                const flashcard = document.getElementById('flashcard');
+                flashcard.classList.toggle('flipped');
+                isFlipped = !isFlipped;
+
+                if (isFlipped) {
+                    document.getElementById('motivation').textContent = "¡Excelente! Continúa aprendiendo.";
+                    // Mostrar los botones de navegación
+                    document.getElementById('prevButton').style.display = 'inline-block';
+                    document.getElementById('nextButton').style.display = 'inline-block';
+
+                    // Deshabilitar botones si es necesario
+                    document.getElementById('prevButton').disabled = (currentCard === 0);
+                    document.getElementById('nextButton').disabled = (currentCard === flashcards.length - 1);
+                } else {
+                    document.getElementById('motivation').textContent = "";
+                    // Ocultar los botones de navegación
+                    document.getElementById('prevButton').style.display = 'none';
+                    document.getElementById('nextButton').style.display = 'none';
+                }
+            }
+        }
+
+        function nextCard() {
+            if (currentCard < flashcards.length - 1) {
+                currentCard++;
+                displayCard(currentCard);
+                startTimer();
+            }
+        }
+
+        function previousCard() {
+            if (currentCard > 0) {
+                currentCard--;
+                displayCard(currentCard);
+                startTimer();
+            }
+        }
+
+        // Evento para voltear la tarjeta
+        document.getElementById('flashcard').addEventListener('click', flipCard);
+    </script>
+</body>
+</html>
